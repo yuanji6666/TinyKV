@@ -16,16 +16,20 @@
 
 ## 代码地图
 
-| 路径 | 职责 | 你需要改吗 |
-|------|------|-----------|
-| `kv/main.go` | 启动 gRPC 服务 | 否 |
-| `proto/proto/tinykvpb.proto` | 服务定义 | 一般否 |
-| `proto/proto/kvrpcpb.proto` | 请求/响应结构 | 一般否 |
-| `kv/storage/storage.go` | `Storage` / `StorageReader` 接口 | 否（读接口） |
-| `kv/storage/modify.go` | `Modify` 写操作抽象 | 否（读用法） |
-| `kv/storage/standalone_storage/standalone_storage.go` | 单机存储引擎 | **是** |
-| `kv/server/raw_api.go` | Raw API handler | **是** |
-| `kv/util/engine_util/` | CF 前缀、WriteBatch、迭代器 | 否（调用） |
+
+| 路径                                                    | 职责                             | 你需要改吗  |
+| ----------------------------------------------------- | ------------------------------ | ------ |
+| `kv/main.go`                                          | 启动 gRPC 服务                     | 否      |
+| `proto/proto/tinykvpb.proto`                          | 服务定义                           | 一般否    |
+| `proto/proto/kvrpcpb.proto`                           | 请求/响应结构                        | 一般否    |
+| `kv/storage/storage.go`                               | `Storage` / `StorageReader` 接口 | 否（读接口） |
+| `kv/storage/modify.go`                                | `Modify` 写操作抽象                 | 否（读用法） |
+| `kv/storage/standalone_storage/standalone_storage.go` | 单机存储引擎                         | **是**  |
+| `kv/server/raw_api.go`                                | Raw API handler                | **是**  |
+| `kv/util/engine_util/`                                | CF 前缀、WriteBatch、迭代器           | 否（调用）  |
+
+
+
 
 ## 实现路线
 
@@ -49,6 +53,8 @@ make project1
 
 ---
 
+
+
 ### Step 1：初始化 StandAloneStorage
 
 **文件：** `kv/storage/standalone_storage/standalone_storage.go`
@@ -66,6 +72,8 @@ make project1
 - 参考项目中其他 storage 实现（如 `raft_storage`）看 Badger 打开选项，但 Project 1 只需单库。
 
 ---
+
+
 
 ### Step 2：实现 Reader
 
@@ -94,6 +102,8 @@ type StorageReader interface {
 
 ---
 
+
+
 ### Step 3：实现 Write
 
 **接口：**
@@ -110,20 +120,24 @@ Write(ctx *kvrpcpb.Context, batch []Modify) error
 
 `Modify` 结构在 `kv/storage/modify.go`，通常包含 CF、Key、Value、Type。
 
-**本阶段可忽略 `kvrpcpb.Context`**，它在 Project 2 才携带 Region 信息。
+**本阶段可忽略** `kvrpcpb.Context`，它在 Project 2 才携带 Region 信息。
 
 ---
+
+
 
 ### Step 4–6：Raw API Handlers
 
 **文件：** `kv/server/raw_api.go`
 
-| RPC | 逻辑概要 |
-|-----|---------|
-| `RawPut` | 构造 `Modify{Type: Put, CF, Key, Value}` → `storage.Write` |
-| `RawDelete` | 构造 `Modify{Type: Delete, ...}` → `storage.Write` |
-| `RawGet` | `storage.Reader` → `GetCF` → 填入 response |
-| `RawScan` | `Reader.IterCF` 从 `StartKey` 起扫描至多 `Limit` 条 |
+
+| RPC         | 逻辑概要                                                     |
+| ----------- | -------------------------------------------------------- |
+| `RawPut`    | 构造 `Modify{Type: Put, CF, Key, Value}` → `storage.Write` |
+| `RawDelete` | 构造 `Modify{Type: Delete, ...}` → `storage.Write`         |
+| `RawGet`    | `storage.Reader` → `GetCF` → 填入 response                 |
+| `RawScan`   | `Reader.IterCF` 从 `StartKey` 起扫描至多 `Limit` 条             |
+
 
 **RawScan 细节：**
 
@@ -139,6 +153,8 @@ Write(ctx *kvrpcpb.Context, batch []Modify) error
 
 ---
 
+
+
 ## Column Family 机制
 
 Badger 本身不支持 CF。TinyKV 用 **key 前缀** 模拟：
@@ -152,6 +168,8 @@ Badger 本身不支持 CF。TinyKV 用 **key 前缀** 模拟：
 Project 4 会用到 `default` / `lock` / `write` 三个 CF，现在先养成通过 CF 读写的习惯。
 
 ---
+
+
 
 ## 测试与验收
 
@@ -178,6 +196,8 @@ LOG_LEVEL=debug make project1
 
 ---
 
+
+
 ## 常见陷阱清单
 
 1. **直接用 dgraph-io/badger** → 编译或行为不一致。
@@ -188,20 +208,27 @@ LOG_LEVEL=debug make project1
 
 ---
 
+
+
 ## 与后续 Project 的关系
 
-| 本 Project 产出 | 后续用途 |
-|----------------|---------|
-| `Storage` 接口实现模式 | `RaftStorage` 复用同一接口 |
-| `engine_util` 使用经验 | peer storage、MVCC 编码都依赖它 |
-| Raw API handler 模式 | Project 2B 起改为走 Raft  propose |
-| CF 概念 | Project 4 MVCC 三 CF 的基础 |
+
+| 本 Project 产出       | 后续用途                         |
+| ------------------ | ---------------------------- |
+| `Storage` 接口实现模式   | `RaftStorage` 复用同一接口         |
+| `engine_util` 使用经验 | peer storage、MVCC 编码都依赖它     |
+| Raw API handler 模式 | Project 2B 起改为走 Raft propose |
+| CF 概念              | Project 4 MVCC 三 CF 的基础      |
+
 
 ---
+
+
 
 ## 推荐阅读顺序
 
 1. [project1-StandaloneKV.md](../project1-StandaloneKV.md) — 官方任务说明
 2. `kv/util/engine_util/doc.go` — CF 与引擎工具
-3. Badger Txn 文档：https://godoc.org/github.com/Connor1996/badger#Txn
+3. Badger Txn 文档：[https://godoc.org/github.com/Connor1996/badger#Txn](https://godoc.org/github.com/Connor1996/badger#Txn)
 4. [reading_list.md](../reading_list.md) — LSM-Tree 章节
+

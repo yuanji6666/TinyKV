@@ -12,6 +12,7 @@ The whole project is a skeleton code for a key-value server and a scheduler serv
   * Implement a standalone storage engine.
   * Implement raw key-value service handlers.
 * [Raft KV](doc/project2-RaftKV.md)
+  * [Raft 算法讲解（中文）](doc/guides/raft-algorithm-explained.md)
   * Implement the basic Raft algorithm.
   * Build a fault-tolerant KV server on top of Raft.
   * Add the support of Raft log garbage collection and snapshot.

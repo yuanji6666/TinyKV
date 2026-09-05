@@ -74,6 +74,7 @@
   - Raft
     - Reading Materials
       - Database Internals: 14. Consensus @ Raft
+      - [Raft 算法讲解（TinyKV 中文）](./guides/raft-algorithm-explained.md)
     - Reference
       - <https://raft.github.io/>
       - <https://pdos.csail.mit.edu/6.824/labs/lab-raft.html>
